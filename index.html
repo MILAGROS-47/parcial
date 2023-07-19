@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Estado de Cuenta</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <style>
+        body{
+            background-color: white;
+            font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+        }
+        .container {
+            margin-top: 50px;
+            width: 50%;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            float: right;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+        }
+        .container::before {
+            content: "";
+            background-image: url('img/fondo.jpg');
+            background-size: cover;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 50%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        img {
+            float: left;
+            margin-right: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sistema de Estado de Cuenta</h1>
+        <form id="formularioTransaccion">
+            <div class="mb-3">
+                <label for="descripcion" class="form-label">Descripción</label>
+                <input type="text" class="form-control" id="descripcion" name="descripcion" required>
+            </div>
+            <div class="mb-3">
+                <label for="monto" class="form-label">Monto</label>
+                <input type="number" step="0.01" class="form-control" id="monto" name="monto" required>
+            </div>
+            <div class="mb-3">
+                <label for="tipoIngreso" class="form-label">Tipo de Transacción</label>
+                <select class="form-control" id="tipoIngreso" name="tipoIngreso" required>
+                    <option value="ingreso">Ingreso</option>
+                    <option value="egreso">Egreso</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Agregar Transacción</button>
+        </form>
+        <hr>
+        <h2>Historial de Transacciones</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Fecha</th>
+                    <th>Descripción</th>
+                    <th>Monto</th>
+                    <th>Tipo</th>
+                </tr>
+            </thead>
+            <tbody id="idTransaccion">
+                <!-- Aquí se insertarán las filas de transacciones -->
+            </tbody>
+        </table>
+        <div id="mensaje"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            const formularioTransaccion = $('#formularioTransaccion');
+            const idTransaccion = $('#idTransaccion');
+
+            // Función para agregar una nueva transacción
+            function addTransaction(event) {
+                event.preventDefault();
+
+                // Obtener los valores del formulario
+                const descripcion = $('#descripcion').val();
+                const monto = $('#monto').val();
+                const tipoIngreso = $('#tipoIngreso').val();
+
+                // Enviar la solicitud al servidor
+                $.ajax({
+                    url: 'api.php',
+                    type: 'POST',
+                    data: {
+                        descripcion: descripcion,
+                        monto: monto,
+                        tipoIngreso: tipoIngreso
+                    },
+                    dataType: 'json',
+                    success: function (response) {
+                        // Limpiar formulario
+                        $('#descripcion').val('');
+                        $('#monto').val('');
+                        $('#tipoIngreso').val('');
+                        // Mostrar mensaje de éxito
+                        $('#mensaje').removeClass('text-danger').addClass('text-success').text('Registro exitoso.');
+                    },
+                    error: function (xhr, status, error) {
+                        // Mostrar mensaje de error
+                        $('#mensaje').removeClass('text-success').addClass('text-danger').text(error);
+                    }
+                });
+
+                // Después de agregar la transacción exitosamente, actualizar la tabla
+                const newTransaction = createTransactionRow(descripcion, monto, tipoIngreso);
+                idTransaccion.append(newTransaction);
+
+                // Restablecer el formulario
+                formularioTransaccion[0].reset();
+            }
+
+            // Función para crear una nueva fila de transacción en la tabla
+            function createTransactionRow(descripcion, monto, tipoIngreso) {
+                const transactionId = generateTransactionId();
+                const currentDateTime = getCurrentDateTime();
+
+                const row = $('<tr></tr>');
+                row.html(`
+                    <td>${transactionId}</td>
+                    <td>${currentDateTime}</td>
+                    <td>${descripcion}</td>
+                    <td>${monto}</td>
+                    <td>${tipoIngreso}</td>
+                `);
+
+                return row;
+            }
+            function generateTransactionId() {
+                return Math.floor(Math.random() * 1000) + 1;
+            }
+
+            function getCurrentDateTime() {
+                const options = { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' };
+                return new Date().toLocaleString('es', options);
+            }
+            formularioTransaccion.on('submit', addTransaction);
+        });
+
+    </script>
+</body>
+</html>
